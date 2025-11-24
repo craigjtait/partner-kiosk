@@ -218,5 +218,15 @@
     </div>
   </main>
 
+  <!-- New: Visitor Not Authorized Page -->
+  <main x-show="page === 'visitorNotAuthorized'">
+    <h1>Access Denied</h1>
+    <div>The email address <span x-text="email"></span> is not registered for this event.</div>
+    <p>Please check your email or contact event staff.</p>
+    <div class="action">
+      <button @click="next()" class="primary">OK</button>
+    </div>
+  </main>
+
 </body>
 </html>

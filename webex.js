@@ -42,6 +42,28 @@ function sendMessage(token, toPersonEmail, markdown, file) {
   return fetch(webexMsgUrl, options);
 }
 
+async function checkVisitorMembership(email, roomId, token, callback) {
+  if (!email || !roomId) {
+    callback(false); // Cannot check without email or roomId
+    return;
+  }
+  if (!token) {
+    // If token is missing, we cannot perform a real check.
+    callback(false); // Assume not authorized if no token
+    return;
+  }
+
+  const url = `${webexMembershipsUrl}?roomId=${roomId}&personEmail=${encodeURIComponent(email)}`;
+  try {
+    const result = await get(url, token);
+    callback(result.length > 0); // True if any membership found, false otherwise
+  } catch (e) {
+    console.error('Error checking visitor membership:', e);
+    callback(false); // Assume not authorized on error
+  }
+}
+
+
 async function searchMembership(keyword, token, roomId, callback) {
   if (!keyword) return;
   if (!token || !roomId) {

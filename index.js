@@ -13,6 +13,7 @@ const dataModel = {
   email: '',
   hostSearch: '',
   currentHost: null,
+  visitorAuthenticated: false, // New: Tracks if the current visitor's email is in the space
   roomId: '', // New: Webex Room ID
   configError: false, // New: Flag for configuration errors
   date: 'October 6, 2022',
@@ -68,6 +69,7 @@ const dataModel = {
     this.phoneNumber = '';
     clearInterval(this.photoTimer);
     this.configError = false; // Reset config error on home
+    this.visitorAuthenticated = false; // Reset visitor authentication status
   },
 
   call() {
@@ -154,7 +156,25 @@ const dataModel = {
       this.checkIn();
     }
     else if (page === 'checkIn') {
-      this.findHost();
+      // NEW: Authenticate the visitor before finding a host
+      if (!this.visitorAuthenticated) {
+        const token = this.getToken();
+        if (!token || !this.roomId) {
+          this.configError = true;
+          this.page = 'configError';
+          return;
+        }
+        checkVisitorMembership(this.email.trim(), this.roomId, token, (isMember) => {
+          if (isMember) {
+            this.visitorAuthenticated = true;
+            this.findHost(); // Proceed to find host
+          } else {
+            this.page = 'visitorNotAuthorized'; // Redirect to visitor not authorized page
+          }
+        });
+      } else {
+        this.findHost(); // Already authenticated, proceed
+      }
     }
     else if (page === 'findHost') {
       this.confirmHost();
@@ -174,6 +194,11 @@ const dataModel = {
     else if (page === 'taxi') {
       this.taxiNumber = Math.ceil(Math.random() * 10000);
       this.page = 'taxiConfirmed';
+    }
+
+    else if (page === 'visitorNotAuthorized') {
+      // If visitor was not authorized, pressing OK goes back home to restart
+      this.home();
     }
 
     else if (page === 'notRegistered') {
