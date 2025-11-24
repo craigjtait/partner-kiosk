@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <script src="date.format.js"></script>
-  <script src="webex.js"></script>
+  <script src="webex.js" defer></script>
   <script src="index.js" defer></script>
   <script src="alpine.js" defer></script>
 
@@ -16,7 +16,7 @@
   <link href="styles/style.css" rel="stylesheet">
 </head>
 
-<body x-data="dataModel" x-cloak :class="theme">
+<body x-data="dataModel" x-cloak :class="theme" x-init="init()">
   <header>
     <div @click="location.reload()" class="logo"></div>
     <div class="time-date">
@@ -67,7 +67,7 @@
         <template x-for="host in foundHosts">
           <div class="host" @click="selectHost(host)">
             <div class="avatar" :style="getAvatar(host)"></div>
-            <div class="name" x-text="host && host.displayName"></div>
+            <div class="name" x-text="host && host.personDisplayName"></div>
           </div>
         </template>
       </div>
@@ -200,7 +200,23 @@
     </div>
   </main>
 
+  <!-- New: Configuration Error Page -->
+  <main x-show="page === 'configError'">
+    <h1>Configuration Error</h1>
+    <div>Missing configuration. Please ensure 'token' and 'roomId' URL parameters are provided.</div>
+    <div class="action">
+      <button @click="home()" class="primary">OK</button>
+    </div>
+  </main>
+
+  <!-- New: Not Registered Page -->
+  <main x-show="page === 'notRegistered'">
+    <h1>Not Registered</h1>
+    <div>It appears you're not registered for this event.</div>
+    <div class="action">
+      <button @click="home()" class="primary">Confirm</button>
+    </div>
+  </main>
 
 </body>
-
 </html>

@@ -13,6 +13,8 @@ const dataModel = {
   email: '',
   hostSearch: '',
   currentHost: null,
+  roomId: '', // New: Webex Room ID
+  configError: false, // New: Flag for configuration errors
   date: 'October 6, 2022',
   time: '10:35 AM',
   foundHosts: [],
@@ -22,20 +24,26 @@ const dataModel = {
   photoTime: 0,
   videoStream: null,
   phoneNumber: '',
-  roomId: '', // New: Property to store the Webex Room ID
   taxiNumber: '',
   mapUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d37964.479957946394!2d-121.95893677399364!3d37.41713987799405!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x808fc911562d481f%3A0xd3d896b473be003!2sCisco%20Systems%20Building%2012!5e0!3m2!1sen!2sno!4v1674211511880!5m2!1sen!2sno',
 
   init() {
     this.updateTimeAndDate();
     setInterval(() => this.updateTimeAndDate(), 30 * 1000);
+
     const params = new URLSearchParams(location.search);
     this.mapUrl = params.get('map') || this.mapUrl;
-    this.roomId = params.get('roomId') || ''; // New: Read roomId from URL parameters
     this.theme = params.get('theme');
+    this.roomId = params.get('roomId'); // Get roomId from URL
+
+    // Check for essential configuration parameters
+    if (!this.getToken() || !this.roomId) {
+      this.configError = true;
+      this.page = 'configError'; // Set page to a new error state
+      return; // Stop initialization if config is missing
+    }
 
     if (this.theme) {
-      // <link href="styles/theme-night.css" rel="stylesheet">
       const head = document.getElementsByTagName("head")[0];
       head.insertAdjacentHTML(
         "beforeend",
@@ -43,9 +51,6 @@ const dataModel = {
     }
     // quick jump to photo page for dev:
     // this.showPhotoPage();
-    // this.name = 'Tore Bjolseth';
-    // this.email = 'tbjolset@cisco.com';
-    // this.currentHost = { displayName: 'Anna Gjerlaug' };
   },
 
   home() {
@@ -62,6 +67,7 @@ const dataModel = {
     this.photo = null;
     this.phoneNumber = '';
     clearInterval(this.photoTimer);
+    this.configError = false; // Reset config error on home
   },
 
   call() {
@@ -128,7 +134,7 @@ const dataModel = {
    },
 
   selectHost(host) {
-    this.currentHost = host;
+    this.currentHost = { displayName: host.personDisplayName, emails: [host.personEmail], avatar: host.personAvatar || null }; // Adapt to membership object structure, assuming personAvatar might exist or be null
     this.hostSearch = '';
     this.searchStatus = '';
     this.foundHosts = [];
@@ -136,7 +142,7 @@ const dataModel = {
   },
 
   getToken() {
-    // TODO perhaps use localStorage intead?
+    // Only get token from URL parameters
     return new URLSearchParams(location.search).get('token');
   },
 
@@ -168,6 +174,11 @@ const dataModel = {
     else if (page === 'taxi') {
       this.taxiNumber = Math.ceil(Math.random() * 10000);
       this.page = 'taxiConfirmed';
+    }
+
+    else if (page === 'notRegistered') {
+      // If user is not registered, go back to home to restart
+      this.home();
     }
 
     else {
@@ -276,20 +287,29 @@ const dataModel = {
   searchHost() {
     const word = this.hostSearch.trim();
 
-    const token = this.getToken(); // Existing token retrieval
-    const roomId = this.roomId; // Get the roomId from the data model
+    const token = this.getToken();
 
-    if (word.length > 2) {
-      this.searchStatus = 'Searching...';
-      // Pass roomId to the searchPerson function
-      searchPerson(word, token, roomId, list => {
-        this.foundHosts = list;
-        this.searchStatus = list.length === 0 && roomId
-          ? `No host found matching "${word}" in the specified room. Please try again.`
-          : 'Found: ' + list.length;
-      });
+    // Ensure token and roomId are available before searching
+    if (!token || !this.roomId) {
+      this.configError = true;
+      this.page = 'configError';
+      return;
     }
-    else {
+
+    if (word.length > 2) { // Minimal length for search
+      this.searchStatus = 'Searching...';
+      // Call the new searchMembership function from webex.js
+      searchMembership(word, token, this.roomId, list => {
+        if (list.length > 0) {
+          this.foundHosts = list;
+          this.searchStatus = 'Found: ' + list.length;
+        } else {
+          this.foundHosts = [];
+          this.searchStatus = 'No host found in this space.';
+          this.page = 'notRegistered'; // Redirect to not registered page if no match
+        }
+      });
+    } else {
       this.foundHosts = [];
       this.searchStatus = '';
     }
