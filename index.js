@@ -22,6 +22,7 @@ const dataModel = {
   photoTime: 0,
   videoStream: null,
   phoneNumber: '',
+  roomId: '', // New: Property to store the Webex Room ID
   taxiNumber: '',
   mapUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d37964.479957946394!2d-121.95893677399364!3d37.41713987799405!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x808fc911562d481f%3A0xd3d896b473be003!2sCisco%20Systems%20Building%2012!5e0!3m2!1sen!2sno!4v1674211511880!5m2!1sen!2sno',
 
@@ -30,6 +31,7 @@ const dataModel = {
     setInterval(() => this.updateTimeAndDate(), 30 * 1000);
     const params = new URLSearchParams(location.search);
     this.mapUrl = params.get('map') || this.mapUrl;
+    this.roomId = params.get('roomId') || ''; // New: Read roomId from URL parameters
     this.theme = params.get('theme');
 
     if (this.theme) {
@@ -274,13 +276,17 @@ const dataModel = {
   searchHost() {
     const word = this.hostSearch.trim();
 
-    const token = this.getToken();
+    const token = this.getToken(); // Existing token retrieval
+    const roomId = this.roomId; // Get the roomId from the data model
 
     if (word.length > 2) {
       this.searchStatus = 'Searching...';
-      searchPerson(word, token, list => {
+      // Pass roomId to the searchPerson function
+      searchPerson(word, token, roomId, list => {
         this.foundHosts = list;
-        this.searchStatus= 'Found: ' + list.length;
+        this.searchStatus = list.length === 0 && roomId
+          ? `No host found matching "${word}" in the specified room. Please try again.`
+          : 'Found: ' + list.length;
       });
     }
     else {
