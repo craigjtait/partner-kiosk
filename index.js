@@ -13,6 +13,7 @@ const dataModel = {
   email: '',
   hostSearch: '',
   currentHost: null,
+  isAuthenticating: false, // New: To manage button state during async auth
   visitorAuthenticated: false, // New: Tracks if the current visitor's email is in the space
   roomId: '', // New: Webex Room ID
   configError: false, // New: Flag for configuration errors
@@ -57,6 +58,7 @@ const dataModel = {
   home() {
     this.page = 'home';
     this.reset();
+    this.isAuthenticating = false; // Reset authentication flag
   },
 
   reset() {
@@ -70,6 +72,7 @@ const dataModel = {
     clearInterval(this.photoTimer);
     this.configError = false; // Reset config error on home
     this.visitorAuthenticated = false; // Reset visitor authentication status
+    this.isAuthenticating = false; // Reset authentication flag
   },
 
   call() {
@@ -157,24 +160,30 @@ const dataModel = {
     }
     else if (page === 'checkIn') {
       // NEW: Authenticate the visitor before finding a host
-      if (!this.visitorAuthenticated) {
-        const token = this.getToken();
-        if (!token || !this.roomId) {
-          this.configError = true;
-          this.page = 'configError';
-          return;
-        }
-        checkVisitorMembership(this.email.trim(), this.roomId, token, (isMember) => {
-          if (isMember) {
-            this.visitorAuthenticated = true;
-            this.findHost(); // Proceed to find host
-          } else {
-            this.page = 'visitorNotAuthorized'; // Redirect to visitor not authorized page
-          }
-        });
-      } else {
-        this.findHost(); // Already authenticated, proceed
+      if (this.visitorAuthenticated) { // If already authenticated (e.g., user went back and tried again), proceed.
+        this.findHost();
+        return; // Exit after synchronous action
       }
+
+      const token = this.getToken();
+      if (!token || !this.roomId) {
+        this.configError = true;
+        this.page = 'configError';
+        return; // Exit if config is missing
+      }
+
+      this.isAuthenticating = true; // Start authenticating
+      // Perform asynchronous authentication check
+      checkVisitorMembership(this.email.trim(), this.roomId, token, (isMember) => {
+        this.isAuthenticating = false; // End authenticating, regardless of outcome
+        if (isMember) {
+          this.visitorAuthenticated = true;
+          this.findHost(); // Proceed only if authenticated
+        } else {
+          this.page = 'visitorNotAuthorized'; // Set page to error if not authenticated
+        }
+      });
+      return; // IMPORTANT: Prevent further synchronous execution of next() for this step.
     }
     else if (page === 'findHost') {
       this.confirmHost();
@@ -346,8 +355,9 @@ const dataModel = {
 
   getAvatar(person) {
     const { avatar } = person || {};
-    return avatar
-      ? { backgroundImage: `url(${avatar.replace('~1600', '~110')})` }
+    const displayAvatar = avatar || person.personAvatar; // Check for both 'avatar' and 'personAvatar'
+    return displayAvatar
+      ? { backgroundImage: `url(${displayAvatar.replace('~1600', '~110')})` }
       : null;
   },
 
@@ -369,5 +379,3 @@ const dataModel = {
     return url;
   }
 };
-
-

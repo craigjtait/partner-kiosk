@@ -51,7 +51,10 @@
       </div>
       <div class="action">
         <button @click="home()" class="secondary">Back</button>
-        <button @click="next()" :disabled="!validForm" class="primary">Continue</button>
+        <button @click="next()" :disabled="!validForm || isAuthenticating" class="primary">
+          <span x-show="!isAuthenticating">Continue</span>
+          <span x-show="isAuthenticating">Authenticating...</span>
+        </button>
       </div>
     </form>
   </main>
