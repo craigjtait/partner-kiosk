@@ -61,7 +61,6 @@ const dataModel = {
   },
 
   reset() {
-    this.name = '';
     this.email = '';
     this.currentHost = null;
     this.foundHosts = [];
@@ -116,7 +115,6 @@ const dataModel = {
   register() {
     this.page = 'registered';
     const msg = hostMessage
-      .replace('$name', this.name.trim())
       .replace('$email', this.email.trim());
     if (!this.currentHost) {
       return;
