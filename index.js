@@ -80,14 +80,14 @@ const dataModel = {
   get validForm() {
     const emailPattern = /\w+@\w+/;
     if (this.page === 'checkIn') {
-      return this.name.trim().length && this.email.match(emailPattern);
+      return this.email.match(emailPattern);
     }
     else if (this.page === 'checkOut') {
       return this.email.match(emailPattern);
     }
-    else if (this.page === 'taxi') {
+    /*else if (this.page === 'taxi') {
       return this.phoneNumber.length > 3;
-    }
+    }*/
     return true;
   },
 
@@ -192,10 +192,10 @@ const dataModel = {
     else if (page === 'checkOut') {
       this.page = 'checkOutResult';
     }
-    else if (page === 'taxi') {
+    /*else if (page === 'taxi') {
       this.taxiNumber = Math.ceil(Math.random() * 10000);
       this.page = 'taxiConfirmed';
-    }
+    }*/
 
     else {
       console.error('unknown next page');
