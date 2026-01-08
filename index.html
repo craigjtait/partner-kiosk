@@ -1,123 +1,140 @@
-<template x-data="dataModel" x-init="init()">
-    <div x-if="page === 'home'" class="page home">
-        <div class="content">
-            <div class="welcome-text">
-                Welcome
-            </div>
-            <div class="intro-text">
-                Please select an action below.
-            </div>
-            <div class="action-buttons">
-                <button @click="checkIn()">Check In</button>
-                <button @click="checkOut()">Check Out</button>
-            </div>
-        </div>
-    </div>
-
-    <div x-if="page === 'checkIn'" class="page check-in">
-        <div class="content">
-            <h2>Check In</h2>
-            <p>Please enter your details to check in for the event.</p>
-            <input type="text" x-model="name" placeholder="Your Name" id="name">
-            <input type="email" x-model="email" placeholder="Your Email" id="email">
-            <div class="action-buttons">
-                <button @click="back()">Back</button>
-                <button @click="next()" :disabled="!validForm">Next</button>
-            </div>
-        </div>
-    </div>
-
-    <div x-if="page === 'photo'" class="page photo-capture">
-        <div class="content">
-            <h2>Take a Photo</h2>
-            <p>Please look at the camera and take a photo for your badge.</p>
-            <div class="webcam-container">
-                <video class="webcam" autoplay playsinline></video>
-                <canvas class="photo"></canvas>
-                <div class="photo-flash"></div>
-            </div>
-            <div class="countdown" x-show="photoTime > 0" x-text="photoTime"></div>
-            <audio id="shutter-sound" src="shutter.mp3"></audio>
-            <div class="action-buttons">
-                <button @click="back()">Back</button>
-                <button @click="takePhotoCountdown()" x-show="!photo">Take Photo</button>
-                <button @click="next()" x-show="photo">Confirm Photo</button>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Check-in Kiosk</title>
+    <!-- Add your CSS links here if you have any, e.g., <link rel="stylesheet" href="styles.css"> -->
+    <!-- You might also need to link Alpine.js itself if it's not already globally available -->
+    <script defer src="alpine.js.txt"></script>
+    <!-- Assuming alpine.js.txt is your Alpine.js library -->
+    <!-- And your custom script -->
+    <script defer src="index.js.txt"></script>
+    <!-- Assuming index.js.txt contains your dataModel -->
+</head>
+<body>
+    <template x-data="dataModel" x-init="init()">
+        <div x-if="page === 'home'" class="page home">
+            <div class="content">
+                <div class="welcome-text">
+                    Welcome
+                </div>
+                <div class="intro-text">
+                    Please select an action below.
+                </div>
+                <div class="action-buttons">
+                    <button @click="checkIn()">Check In</button>
+                    <button @click="checkOut()">Check Out</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div x-if="page === 'confirm'" class="page confirm-details">
-        <div class="content">
-            <h2>Confirm Your Details</h2>
-            <div class="details-summary">
-                <img :src="photoSrc()" alt="Your Photo" x-show="photo">
-                <p><strong>Name:</strong> <span x-text="name"></span></p>
-                <p><strong>Email:</strong> <span x-text="email"></span></p>
-            </div>
-            <div class="action-buttons">
-                <button @click="back()">Back</button>
-                <button @click="next()">Confirm Check-in</button>
+        <div x-if="page === 'checkIn'" class="page check-in">
+            <div class="content">
+                <h2>Check In</h2>
+                <p>Please enter your details to check in for the event.</p>
+                <input type="text" x-model="name" placeholder="Your Name" id="name">
+                <input type="email" x-model="email" placeholder="Your Email" id="email">
+                <div class="action-buttons">
+                    <button @click="back()">Back</button>
+                    <button @click="next()" :disabled="!validForm">Next</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div x-if="page === 'registered'" class="page registered">
-        <div class="content">
-            <h2>You are Checked In!</h2>
-            <p>Thank you for checking in for the event.</p>
-            <p>Enjoy your time!</p>
-            <div class="action-buttons">
-                <button @click="home()">Done</button>
+        <div x-if="page === 'photo'" class="page photo-capture">
+            <div class="content">
+                <h2>Take a Photo</h2>
+                <p>Please look at the camera and take a photo for your badge.</p>
+                <div class="webcam-container">
+                    <video class="webcam" autoplay="" playsinline=""></video>
+                    <canvas class="photo"></canvas>
+                    <div class="photo-flash"></div>
+                </div>
+                <div class="countdown" x-show="photoTime &gt; 0" x-text="photoTime"></div>
+                <audio id="shutter-sound" src="shutter.mp3"></audio>
+                <div class="action-buttons">
+                    <button @click="back()">Back</button>
+                    <button @click="takePhotoCountdown()" x-show="!photo">Take Photo</button>
+                    <button @click="next()" x-show="photo">Confirm Photo</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div x-if="page === 'notRegistered'" class="page error">
-        <div class="content">
-            <h2>Registration Error</h2>
-            <p>We could not find your registration for this event.</p>
-            <p>Please check your details or contact event staff for assistance.</p>
-            <div class="action-buttons">
-                <button @click="home()">Back to Home</button>
+        <div x-if="page === 'confirm'" class="page confirm-details">
+            <div class="content">
+                <h2>Confirm Your Details</h2>
+                <div class="details-summary">
+                    <img :src="photoSrc()" alt="Your Photo" x-show="photo">
+                    <p><strong>Name:</strong> <span x-text="name"></span></p>
+                    <p><strong>Email:</strong> <span x-text="email"></span></p>
+                </div>
+                <div class="action-buttons">
+                    <button @click="back()">Back</button>
+                    <button @click="next()">Confirm Check-in</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div x-if="page === 'checkOut'" class="page check-out">
-        <div class="content">
-            <h2>Check Out</h2>
-            <p>Please enter your email to check out.</p>
-            <input type="email" x-model="email" placeholder="Your Email" id="checkout-email">
-            <div class="action-buttons">
-                <button @click="home()">Cancel</button>
-                <button @click="next()" :disabled="!validForm">Check Out</button>
+        <div x-if="page === 'registered'" class="page registered">
+            <div class="content">
+                <h2>You are Checked In!</h2>
+                <p>Thank you for checking in for the event.</p>
+                <p>Enjoy your time!</p>
+                <div class="action-buttons">
+                    <button @click="home()">Done</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div x-if="page === 'checkOutResult'" class="page check-out-result">
-        <div class="content">
-            <h2>Thank You!</h2>
-            <p>You have successfully checked out.</p>
-            <div class="action-buttons">
-                <button @click="home()">Done</button>
+        <div x-if="page === 'notRegistered'" class="page error">
+            <div class="content">
+                <h2>Registration Error</h2>
+                <p>We could not find your registration for this event.</p>
+                <p>Please check your details or contact event staff for assistance.</p>
+                <div class="action-buttons">
+                    <button @click="home()">Back to Home</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div x-if="page === 'configError'" class="page error">
-        <div class="content">
-            <h2>Configuration Error</h2>
-            <p>The kiosk is not properly configured. Missing Webex token or Room ID.</p>
-            <p>Please contact support.</p>
-            <div class="action-buttons">
-                <button @click="home()">Reload</button>
+        <div x-if="page === 'checkOut'" class="page check-out">
+            <div class="content">
+                <h2>Check Out</h2>
+                <p>Please enter your email to check out.</p>
+                <input type="email" x-model="email" placeholder="Your Email" id="checkout-email">
+                <div class="action-buttons">
+                    <button @click="home()">Cancel</button>
+                    <button @click="next()" :disabled="!validForm">Check Out</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="footer">
-        <div class="date" x-text="date"></div>
-        <div class="time" x-text="time"></div>
-    </div>
-</template>
+        <div x-if="page === 'checkOutResult'" class="page check-out-result">
+            <div class="content">
+                <h2>Thank You!</h2>
+                <p>You have successfully checked out.</p>
+                <div class="action-buttons">
+                    <button @click="home()">Done</button>
+                </div>
+            </div>
+        </div>
+
+        <div x-if="page === 'configError'" class="page error">
+            <div class="content">
+                <h2>Configuration Error</h2>
+                <p>The kiosk is not properly configured. Missing Webex token or Room ID.</p>
+                <p>Please contact support.</p>
+                <div class="action-buttons">
+                    <button @click="home()">Reload</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="date" x-text="date"></div>
+            <div class="time" x-text="time"></div>
+        </div>
+    </template>
+</body>
+</html>
