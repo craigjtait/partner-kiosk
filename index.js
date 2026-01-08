@@ -1,4 +1,6 @@
-// REMOVE THIS LINE: let currentSearchNumber = 0;
+// (Keep the rest of your webex.js content as is, starting with const hostMessage)
+
+console.log("index.js started loading."); // ADD THIS LINE
 
 const hostMessage = `Hello! A visitor has just arrived in the reception, and registered you as their host.
 
@@ -262,3 +264,7 @@ const dataModel = {
     return url;
   }
 };
+
+// Explicitly attach dataModel to the window object to ensure global access
+window.dataModel = dataModel; // ADD THIS LINE
+console.log("dataModel assigned to window."); // ADD THIS LINE
