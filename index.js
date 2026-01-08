@@ -1,34 +1,25 @@
-// webex.js content (unchanged, still needs to be loaded before this script)
+// This file assumes 'webex.js' and 'date.format.js' are loaded BEFORE this script.
 
-// date.format.js content (unchanged, still needs to be loaded before this script)
+// The hostMessage constant can remain global as it's a simple string and used by a method within dataModel.
+const hostMessage = `Hello! A visitor has just arrived in the reception, and registered you as their host.
 
-// REMOVE the console.log("index.js started loading."); from the top of this file.
-// REMOVE the line `window.dataModel = dataModel;` from the bottom of this file.
-// REMOVE the console.log("dataModel assigned to window."); from the bottom of this file.
+Details:
 
-// Wrap your entire dataModel object definition inside Alpine.data()
+* Name: **$name**
+* Email: **$email**
+`;
+
 document.addEventListener('alpine:init', () => {
-    console.log("Alpine.js init event fired. Registering dataModel."); // Added for debugging
+    console.log("Alpine.js init event fired. Registering dataModel component."); // Debugging message
 
     Alpine.data('dataModel', () => ({
-        // All the properties and methods of your dataModel object go here
-        // The `hostMessage` constant should also be moved inside or handled differently
-        // For simplicity, let's keep hostMessage as a global const if it's used outside
-        // but if it's only used within dataModel, it can go inside.
-        // For now, assuming hostMessage remains global or is moved into dataModel if only used there.
-
-        // Original properties from dataModel
         page: 'home',
         name: '',
         email: '',
-        // hostSearch: '', // Removed as per earlier request
-        // currentHost: null, // Removed as per earlier request
         date: 'October 6, 2022',
         time: '10:35 AM',
         roomId: '',
         configError: false,
-        // foundHosts: [], // Removed as per earlier request
-        // searchStatus: '', // Removed as per earlier request
         photo: null,
         photoTimer: 0,
         photoTime: 0,
@@ -37,7 +28,6 @@ document.addEventListener('alpine:init', () => {
         taxiNumber: '',
         mapUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d37964.479957946394!2d-121.95893677399364!3d37.41713987799405!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x808fc911562d481f%3A0xd3d896b473be003!2sCisco%20Systems%20Building%2012!5e0!3m2!1sen!2sno!4v1674211511880!5m2!1sen!2sno',
 
-        // Original init method
         init() {
             this.updateTimeAndDate();
             setInterval(() => this.updateTimeAndDate(), 30 * 1000);
@@ -59,7 +49,6 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        // Original methods
         home() {
             this.page = 'home';
             this.reset();
@@ -69,9 +58,6 @@ document.addEventListener('alpine:init', () => {
         reset() {
             this.name = '';
             this.email = '';
-            // this.currentHost = null; // Removed
-            // this.foundHosts = []; // Removed
-            // this.searchStatus = ''; // Removed
             this.photo = null;
             this.phoneNumber = '';
             clearInterval(this.photoTimer);
@@ -110,6 +96,13 @@ document.addEventListener('alpine:init', () => {
         register() {
             this.page = 'registered';
             // Host messaging functionality removed for event attendee kiosk
+            // If you need to send a message to a general event contact, you would implement that here.
+            // Example of using hostMessage (if you had a recipient):
+            // const recipientEmail = "event.manager@example.com";
+            // const msg = hostMessage
+            //   .replace('$name', this.name.trim())
+            //   .replace('$email', this.email.trim());
+            // sendMessage(this.getToken(), recipientEmail, msg, this.photo);
         },
 
         getToken() {
@@ -130,9 +123,7 @@ document.addEventListener('alpine:init', () => {
                 const roomId = this.getRoomId();
                 const visitorName = this.name.trim();
 
-                // this.searchStatus = 'Authenticating visitor...';
                 validateVisitorInSpace(visitorName, token, roomId, (isAuthenticated) => {
-                    // this.searchStatus = '';
                     if (isAuthenticated) {
                         this.showPhotoPage();
                     } else {
@@ -245,13 +236,3 @@ document.addEventListener('alpine:init', () => {
         }
     }));
 });
-
-// If `hostMessage` is only used within the `register` function, it can be moved inside the `Alpine.data` definition.
-// If it's potentially used elsewhere (e.g., by other scripts), keep it outside as a global const.
-const hostMessage = `Hello! A visitor has just arrived in the reception, and registered you as their host.
-
-Details:
-
-* Name: **$name**
-* Email: **$email**
-`;

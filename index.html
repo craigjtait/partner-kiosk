@@ -17,18 +17,9 @@
     <!-- Load your application logic (dataModel) last -->
     <script defer src="index.js"></script>
 
-    <!-- Optional: Add a simple script to check if dataModel is defined for debugging -->
-    <script>
-        document.addEventListener('alpine:init', () => {
-            if (typeof window.dataModel === 'undefined') { // Use window.dataModel to be explicit
-                console.error("Error: dataModel is not defined. Check index.js and script loading order.");
-                // You might want to display a user-friendly error message on the page here
-                document.body.innerHTML = '<h1>Initialization Error</h1><p>The application could not start. Please check the browser console for details or contact support.</p>';
-            } else {
-                console.log("dataModel is defined and Alpine.js is initializing.");
-            }
-        });
-    </script>
+    <!-- REMOVED: The previous debugging script that was checking window.dataModel -->
+    <!-- This script was causing the "dataModel is not defined" error because Alpine.data()
+         does not put the component directly on the window object. -->
 </head>
 <body>
     <template x-data="dataModel" x-init="init()">
