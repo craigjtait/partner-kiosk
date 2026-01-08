@@ -5,12 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Event Check-in Kiosk</title>
     <!-- Add your CSS links here if you have any, e.g., <link rel="stylesheet" href="styles.css"> -->
-    <!-- You might also need to link Alpine.js itself if it's not already globally available -->
+    <!-- If you have a theme-cisco.css, it should be linked here as well -->
+    <!-- <link rel="stylesheet" href="styles/theme-cisco.css" /> -->
+
+    <!-- Load Alpine.js library first -->
     <script defer src="alpine.js"></script>
-    <!-- Assuming alpine.js is your Alpine.js library -->
-    <!-- And your custom script -->
+    <!-- Load date formatting utility, as index.js depends on it -->
+    <script defer src="date.format.js"></script>
+    <!-- Load Webex API functions, as index.js depends on them -->
+    <script defer src="webex.js"></script> <!-- CORRECTED: Changed from ewbex.js to webex.js -->
+    <!-- Load your application logic (dataModel) last -->
     <script defer src="index.js"></script>
-    <!-- Assuming index.js contains your dataModel -->
+
+    <!-- Optional: Add a simple script to check if dataModel is defined for debugging -->
+    <script>
+        document.addEventListener('alpine:init', () => {
+            if (typeof dataModel === 'undefined') {
+                console.error("Error: dataModel is not defined. Check index.js and script loading order.");
+                // You might want to display a user-friendly error message on the page here
+            } else {
+                console.log("dataModel is defined and Alpine.js is initializing.");
+            }
+        });
+    </script>
 </head>
 <body>
     <template x-data="dataModel" x-init="init()">
@@ -46,7 +63,7 @@
             <div class="content">
                 <h2>Take a Photo</h2>
                 <p>Please look at the camera and take a photo for your badge.</p>
-                <div class="webcam-container">
+            <div class="webcam-container">
                     <video class="webcam" autoplay="" playsinline=""></video>
                     <canvas class="photo"></canvas>
                     <div class="photo-flash"></div>
