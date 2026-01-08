@@ -18,8 +18,6 @@
     <script defer src="index.js"></script>
 
     <!-- REMOVED: The previous debugging script that was checking window.dataModel -->
-    <!-- This script was causing the "dataModel is not defined" error because Alpine.data()
-         does not put the component directly on the window object. -->
 </head>
 <body>
     <template x-data="dataModel" x-init="init()">
