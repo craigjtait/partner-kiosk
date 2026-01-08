@@ -34,12 +34,12 @@ Alpine.data('dataModel', () => ({
         this.mapUrl = params.get('map') || this.mapUrl;
         this.theme = params.get('theme');
 
-        if (this.theme) {
+        /*if (this.theme) {
             const head = document.getElementsByTagName("head")[0];
             head.insertAdjacentHTML(
                 "beforeend",
                 `<link rel="stylesheet" href="styles/theme-cisco.css" />`);
-        }
+        } */
 
         if (!this.getToken() || !this.roomId) {
             this.configError = true;
