@@ -18,12 +18,16 @@
     <script defer src="index.js"></script>
 </head>
 <body>
-    <!-- DEBUGGING: Simple Alpine test outside the main template -->
-    <div x-data="{ alpineTest: 'Alpine is generally working!' }">
-        <h1 x-text="alpineTest"></h1>
-    </div>
+    <!--
+        REMOVED: The temporary debugging <div> that displayed "Alpine is generally working!".
+        It served its purpose!
+    -->
 
-    <template x-data="dataModel" x-init="console.log('dataModel x-init called. Current page:', page); init()">
+    <!--
+        CRITICAL CHANGE: Changed <template> to <div>.
+        The x-data="dataModel" should be on a standard HTML element for its content to be rendered.
+    -->
+    <div x-data="dataModel" x-init="console.log('dataModel x-init called. Current page:', page); init()">
         <div x-if="page === 'home'" class="page home">
             <div class="content">
                 <div class="welcome-text">
@@ -145,6 +149,6 @@
             <div class="date" x-text="date"></div>
             <div class="time" x-text="time"></div>
         </div>
-    </template>
+    </div> <!-- CRITICAL CHANGE: Changed </template> to </div> -->
 </body>
 </html>
