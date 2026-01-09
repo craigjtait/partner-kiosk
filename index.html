@@ -10,15 +10,13 @@
     <!-- Include your general stylesheet -->
     <link rel="stylesheet" href="styles/style.css" />
 
-    <!-- Load date formatting utility -->
-    <script src="date.format.js"></script> <!-- CRITICAL CHANGE: REMOVED 'defer' attribute -->
-    <!-- Load Webex API functions -->
-    <script src="webex.js"></script> <!-- CRITICAL CHANGE: REMOVED 'defer' attribute -->
-    <!-- Load your application logic (dataModel) -->
-    <script src="index.js"></script> <!-- This was already without 'defer' -->
+    <!-- Load dependencies as blocking scripts -->
+    <script src="date.format.js"></script>
+    <script src="webex.js"></script>
+    <script src="index.js"></script>
 
-    <!-- Load Alpine.js library LAST -->
-    <script src="alpine.js"></script> <!-- CRITICAL CHANGE: REMOVED 'defer' attribute, MOVED TO END -->
+    <!-- Load Alpine.js library LAST, but with defer -->
+    <script defer src="alpine.js"></script> <!-- CRITICAL CHANGE: 'defer' ADDED BACK HERE -->
 </head>
 <body>
     <!-- The main Alpine.js component container should be a <div> -->
