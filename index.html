@@ -17,7 +17,7 @@
     <!-- Load Webex API functions, as index.js depends on them -->
     <script defer src="webex.js"></script>
     <!-- Load your application logic (dataModel) last -->
-    <script defer src="index.js"></script>
+    <script src="index.js"></script> <!-- CRITICAL CHANGE: REMOVED 'defer' attribute -->
 </head>
 <body>
     <!-- The main Alpine.js component container should be a <div> -->
