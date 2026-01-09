@@ -52,8 +52,7 @@ function sendMessage(token, toPersonEmail, markdown, file) {
   return fetch(webexMsgUrl, options);
 }
 
-// MODIFIED FUNCTION SIGNATURE AND URL CONSTRUCTION
-async function validateVisitorInSpace(visitorEmail, token, roomId, callback) { // <--- CHANGED visitorName to visitorEmail
+async function validateVisitorInSpace(visitorEmail, token, roomId, callback) {
   console.log('validateVisitorInSpace: Called with:', { visitorEmail, roomId });
   if (!visitorEmail || !token || !roomId) {
     console.error('validateVisitorInSpace: Missing required parameters.', { visitorEmail, token: token ? 'present' : 'missing', roomId });
@@ -63,8 +62,7 @@ async function validateVisitorInSpace(visitorEmail, token, roomId, callback) { /
 
   currentSearchNumber++;
   const id = currentSearchNumber;
-  // URL CONSTRUCTION CHANGED TO USE personEmail
-  const url = `${webexMembershipsUrl}?roomId=${roomId}&personEmail=${encodeURIComponent(visitorEmail)}`; // <--- CHANGED personDisplayName to personEmail and visitorName to visitorEmail
+  const url = `${webexMembershipsUrl}?roomId=${roomId}&personEmail=${encodeURIComponent(visitorEmail)}`;
   console.log('validateVisitorInSpace: Constructed URL:', url);
   const result = await get(url, token);
 
