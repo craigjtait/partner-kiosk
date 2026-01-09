@@ -34,16 +34,19 @@ Alpine.data('dataModel', () => ({
         this.mapUrl = params.get('map') || this.mapUrl;
         this.theme = params.get('theme');
 
-        /*if (this.theme) {
+        if (this.theme) {
             const head = document.getElementsByTagName("head")[0];
             head.insertAdjacentHTML(
                 "beforeend",
                 `<link rel="stylesheet" href="styles/theme-cisco.css" />`);
-        } */
+        }
 
         if (!this.getToken() || !this.roomId) {
             this.configError = true;
             this.page = 'configError';
+            console.error("init: Configuration error - missing token or roomId."); // ADDED LOG
+        } else {
+            console.log("init: Kiosk configured with roomId:", this.roomId); // ADDED LOG
         }
     },
 
@@ -93,7 +96,6 @@ Alpine.data('dataModel', () => ({
 
     register() {
         this.page = 'registered';
-        // Host messaging functionality removed for event attendee kiosk
     },
 
     getToken() {
@@ -106,6 +108,7 @@ Alpine.data('dataModel', () => ({
 
     next() {
         const { page } = this;
+        console.log('next: Current page:', page); // ADDED LOG
 
         if (page === 'home') {
             this.checkIn();
@@ -114,7 +117,9 @@ Alpine.data('dataModel', () => ({
             const roomId = this.getRoomId();
             const visitorName = this.name.trim();
 
+            console.log('next (checkIn): Attempting to validate visitor in space.'); // ADDED LOG
             validateVisitorInSpace(visitorName, token, roomId, (isAuthenticated) => {
+                console.log('next (checkIn) callback: isAuthenticated =', isAuthenticated); // ADDED LOG
                 if (isAuthenticated) {
                     this.showPhotoPage();
                 } else {
@@ -232,5 +237,3 @@ document.addEventListener('DOMContentLoaded', () => {
     Alpine.start();
     console.log("Alpine.start() called.");
 });
-
-console.log("index.js finished executing."); // Final debug message
