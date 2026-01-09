@@ -67,7 +67,7 @@
                         <div x-ref="photoFlash" class="photo-flash"></div>
                     </div>
                     <div class="countdown" x-show="photoTime &gt; 0" x-text="photoTime"></div>
-                    <audio x-ref="shutterSound" id="shutter-sound" src="/assets/shutter.mp3"></audio>
+                    <audio x-ref="shutterSound" id="shutter-sound" src="assets/shutter.mp3"></audio>
                     <div class="action-buttons">
                         <button @click="back()">Back</button>
                         <button @click="takePhotoCountdown()" x-show="!photo">Take Photo</button>
