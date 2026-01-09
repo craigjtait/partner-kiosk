@@ -53,10 +53,10 @@ function sendMessage(token, toPersonEmail, markdown, file) {
 }
 
 // MODIFIED FUNCTION SIGNATURE AND URL CONSTRUCTION
-async function validateVisitorInSpace(visitorEmail, token, roomId, callback) {
-  console.log('validateVisitorInSpace: Called with:', { visitorEmail, roomId }); // LOG UPDATED
-  if (!visitorEmail || !token || !roomId) { // PARAMETER CHECK UPDATED
-    console.error('validateVisitorInSpace: Missing required parameters.', { visitorEmail, token: token ? 'present' : 'missing', roomId }); // LOG UPDATED
+async function validateVisitorInSpace(visitorEmail, token, roomId, callback) { // <--- visitorEmail as parameter
+  console.log('validateVisitorInSpace: Called with:', { visitorEmail, roomId });
+  if (!visitorEmail || !token || !roomId) {
+    console.error('validateVisitorInSpace: Missing required parameters.', { visitorEmail, token: token ? 'present' : 'missing', roomId });
     callback(false);
     return;
   }
@@ -64,17 +64,17 @@ async function validateVisitorInSpace(visitorEmail, token, roomId, callback) {
   currentSearchNumber++;
   const id = currentSearchNumber;
   // URL CONSTRUCTION CHANGED TO USE personEmail
-  const url = `${webexMembershipsUrl}?roomId=${roomId}&personEmail=${encodeURIComponent(visitorEmail)}`;
+  const url = `${webexMembershipsUrl}?roomId=${roomId}&personEmail=${encodeURIComponent(visitorEmail)}`; // <--- personEmail in URL
   console.log('validateVisitorInSpace: Constructed URL:', url);
   const result = await get(url, token);
 
   if (id < currentSearchNumber) {
-    console.log('validateVisitorInSpace: Discarding old search result for:', visitorEmail); // LOG UPDATED
+    console.log('validateVisitorInSpace: Discarding old search result for:', visitorEmail);
     return;
   }
 
   const isAuthenticated = result.length > 0;
-  console.log('validateVisitorInSpace: Authentication result for', visitorEmail, 'in room', roomId, ':', isAuthenticated); // LOG UPDATED
+  console.log('validateVisitorInSpace: Authentication result for', visitorEmail, 'in room', roomId, ':', isAuthenticated);
   callback(isAuthenticated);
 }
 
