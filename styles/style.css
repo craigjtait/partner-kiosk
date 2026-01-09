@@ -200,6 +200,67 @@ form {
   -webkit-text-stroke: 2px solid black;
 }
 
+/* Ensure the main container for the photo page has flexible layout */
+.page.photo-capture .content {
+    display: flex;
+    flex-direction: column; /* Stack elements vertically */
+    align-items: center;    /* Center items horizontally */
+    justify-content: space-between; /* Distribute space */
+    min-height: 80vh; /* Give it some height to work with */
+    padding: 20px;
+    box-sizing: border-box; /* Include padding in element's total width and height */
+}
+
+/* Style the webcam container to control its size and positioning */
+.webcam-container {
+    width: 100%; /* Take full width of its parent */
+    max-width: 640px; /* Or whatever max width you want for your video */
+    margin-bottom: 20px; /* Space between webcam and buttons */
+    position: relative; /* Needed if you want to absolutely position video/canvas inside */
+    background-color: #000; /* Background for when video is loading */
+    border-radius: 8px;
+    overflow: hidden; /* Ensures video/canvas don't spill out */
+}
+
+/* Ensure video and canvas fit within their container and don't overlap buttons */
+.webcam-container video,
+.webcam-container canvas {
+    display: block; /* Important: removes extra space below inline elements */
+    width: 100%;    /* Fill the container width */
+    height: auto;   /* Maintain aspect ratio */
+    /* If you need them to stack precisely, you might use position: absolute; */
+    /* position: absolute; */
+    /* top: 0; left: 0; */
+    /* width: 100%; height: 100%; */
+}
+
+/* Ensure action buttons are always at the bottom and clickable */
+.action-buttons {
+    width: 100%; /* Take full width */
+    display: flex; /* Use flexbox for button layout */
+    justify-content: center; /* Center buttons */
+    gap: 15px; /* Space between buttons */
+    margin-top: auto; /* Pushes buttons to the bottom if parent is flex-column */
+    position: relative; /* Give it a stacking context */
+    z-index: 10; /* Ensure it's above other elements if they are positioned */
+}
+
+/* Basic button styling if not already present */
+.action-buttons button {
+    padding: 10px 20px;
+    font-size: 1.1em;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    background-color: #007bff; /* Example color */
+    color: white;
+}
+
+.action-buttons button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
 .blink {
   animation-name: flash;
   animation-duration: 0.3s;
