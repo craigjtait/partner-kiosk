@@ -7,7 +7,7 @@
 // This version is compatible with window.Alpine = { defer: true } in index.html
 Alpine.data('dataModel', () => ({
     // MOVED hostMessage INSIDE the dataModel component
-    //hostMessage: `Hello! A visitor has just arrived in the reception, and registered you as their host.
+    hostMessage: `Hello! A visitor has just arrived in the reception, and registered you as their host.
 
 Details:
 
