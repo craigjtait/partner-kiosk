@@ -1,94 +1,270 @@
-let currentSearchNumber = 0;
+// This file assumes 'webex.js' and 'date.format.js' are loaded BEFORE this script.
+// Also assumes 'alpine.js' has been set to defer auto-start via window.Alpine = { defer: true } in index.html.
 
-const webexMsgUrl = 'https://webexapis.com/v1/messages';
-const webexSearchUrl = 'https://webexapis.com/v1/people?displayName=';
-const webexMembershipsUrl = 'https://webexapis.com/v1/memberships';
-const webexPeopleUrl = 'https://webexapis.com/v1/people?displayName=';
+const hostMessage = `Hello! A visitor has just arrived in the reception, and registered you as their host.
 
-async function get(url, token) {
-  console.log('GET: Making HTTP request to:', url);
-  console.log('GET: Using token (first 10 chars):', token ? token.substring(0, 10) + '...' : 'No token');
+Details:
 
-  if (!token) {
-    console.error('GET: No webex token specified for request to', url);
-    throw(new Error('No webex token specified'));
-  }
+* Name: **$name**
+* Email: **$email**
+`;
 
-  const options = {
-    method: 'GET',
-    headers: {
-      Authorization: 'Bearer ' + token,
+// Define the Alpine data component
+Alpine.data('dataModel', () => ({
+    page: 'home',
+    name: '',
+    email: '', // This will now be used for validation
+    date: 'October 6, 2022',
+    time: '10:35 AM',
+    roomId: '',
+    configError: false,
+    photo: null,
+    photoTimer: 0,
+    photoTime: 0,
+    videoStream: null,
+    phoneNumber: '',
+    taxiNumber: '',
+    mapUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d37964.479957946394!2d-121.95893677399405!3d37.41713987799405!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x808fc911562d481f%3A0xd3d896b473be003!2sCisco%20Systems%20Building%2012!5e0!3m2!1sen!2sno!4v1674211511880!5m2!1sen!2sno',
+
+    init() {
+        this.updateTimeAndDate();
+        setInterval(() => this.updateTimeAndDate(), 30 * 1000);
+        const params = new URLSearchParams(location.search);
+        this.roomId = params.get('roomId');
+        this.mapUrl = params.get('map') || this.mapUrl;
+        this.theme = params.get('theme');
+
+        if (this.theme) {
+            const head = document.getElementsByTagName("head")[0];
+            head.insertAdjacentHTML(
+                "beforeend",
+                `<link rel="stylesheet" href="styles/theme-cisco.css" />`);
+        }
+
+        if (!this.getToken() || !this.roomId) {
+            this.configError = true;
+            this.page = 'configError';
+            console.error("init: Configuration error - missing token or roomId.");
+        } else {
+            console.log("init: Kiosk configured with roomId:", this.roomId);
+        }
     },
-  };
-  try {
-    const data = await fetch(url, options);
-    console.log('GET: HTTP response status:', data.status);
-    const json = await data.json();
-    console.log('GET: Received JSON response:', json);
-    return json.items || [];
-  }
-  catch(e) {
-    console.error('GET: Error fetching data from', url, ':', e);
-    return [];
-  }
-}
 
-function sendMessage(token, toPersonEmail, markdown, file) {
-  const formData = new FormData();
-  if (file) {
-    formData.append('files', file);
-  }
-  formData.set('markdown', markdown);
-  formData.set('toPersonEmail', toPersonEmail);
-
-  const options = {
-    headers: {
-      Authorization: 'Bearer ' + token,
+    home() {
+        this.page = 'home';
+        this.reset();
+        this.configError = false;
     },
-    method: 'POST',
-    body: formData,
-  };
 
-  return fetch(webexMsgUrl, options);
-}
+    reset() {
+        this.name = '';
+        this.email = '';
+        this.photo = null;
+        this.phoneNumber = '';
+        clearInterval(this.photoTimer);
+    },
 
-// MODIFIED FUNCTION SIGNATURE AND URL CONSTRUCTION
-async function validateVisitorInSpace(visitorEmail, token, roomId, callback) { // <--- visitorEmail as parameter
-  console.log('validateVisitorInSpace: Called with:', { visitorEmail, roomId });
-  if (!visitorEmail || !token || !roomId) {
-    console.error('validateVisitorInSpace: Missing required parameters.', { visitorEmail, token: token ? 'present' : 'missing', roomId });
-    callback(false);
-    return;
-  }
+    call() {
+        const defaultNumber = 'erica.talking@ivr.vc';
+        const number = new URLSearchParams(location.search).get('reception') || defaultNumber;
+        location.href = `sip:${number}`;
+    },
 
-  currentSearchNumber++;
-  const id = currentSearchNumber;
-  // URL CONSTRUCTION CHANGED TO USE personEmail
-  const url = `${webexMembershipsUrl}?roomId=${roomId}&personEmail=${encodeURIComponent(visitorEmail)}`; // <--- personEmail in URL
-  console.log('validateVisitorInSpace: Constructed URL:', url);
-  const result = await get(url, token);
+    get validForm() {
+        const emailPattern = /\w+@\w+/;
+        if (this.page === 'checkIn') {
+            return this.name.trim().length && this.email.match(emailPattern);
+        } else if (this.page === 'checkOut') {
+            return this.email.match(emailPattern);
+        }
+        return true;
+    },
 
-  if (id < currentSearchNumber) {
-    console.log('validateVisitorInSpace: Discarding old search result for:', visitorEmail);
-    return;
-  }
+    checkIn() {
+        this.page = 'checkIn';
+        this.focus('#name');
+    },
 
-  const isAuthenticated = result.length > 0;
-  console.log('validateVisitorInSpace: Authentication result for', visitorEmail, 'in room', roomId, ':', isAuthenticated);
-  callback(isAuthenticated);
-}
+    focus(id) {
+        setTimeout(() => {
+            const firstInput = document.querySelector(id);
+            if (firstInput) {
+                firstInput.focus();
+            }
+        }, 100);
+    },
 
-async function searchHostByName(keyword, token, callback) {
-  if (!keyword || !token) return;
+    register() {
+        this.page = 'registered';
+    },
 
-  currentSearchNumber++;
-  const id = currentSearchNumber;
-  const url = webexPeopleUrl + encodeURIComponent(keyword);
-  const result = await get(url, token);
+    getToken() {
+        return new URLSearchParams(location.search).get('token');
+    },
 
-  if (id < currentSearchNumber) {
-    return;
-  }
+    getRoomId() {
+        return new URLSearchParams(location.search).get('roomId');
+    },
 
-  callback(result);
-}
+    next() {
+        const { page } = this;
+        console.log('next: Current page:', page);
+
+        if (page === 'home') {
+            this.checkIn();
+        } else if (page === 'checkIn') {
+            const token = this.getToken();
+            const roomId = this.getRoomId();
+            const visitorEmail = this.email.trim();
+
+            console.log('next (checkIn): Attempting to validate visitor in space using email:', visitorEmail);
+            validateVisitorInSpace(visitorEmail, token, roomId, (isAuthenticated) => {
+                console.log('next (checkIn) callback: isAuthenticated =', isAuthenticated);
+                if (isAuthenticated) {
+                    this.showPhotoPage();
+                } else {
+                    this.page = 'notRegistered';
+                }
+            });
+        } else if (page === 'photo') {
+            this.showConfirmation();
+        } else if (page === 'confirm') {
+            this.register();
+        } else if (page === 'checkOut') {
+            this.page = 'checkOutResult';
+        } else {
+            console.error('unknown next page');
+        }
+    },
+
+    back() {
+        const { page } = this;
+        if (page === 'checkIn') {
+            this.home();
+        } else if (page === 'photo') {
+            this.checkIn();
+        } else if (page === 'confirm') {
+            this.showPhotoPage();
+        } else {
+            console.error('unknown previous page');
+        }
+    },
+
+    showConfirmation() {
+        this.stopCamera();
+        this.page = 'confirm';
+    },
+
+    checkout() {
+        this.page = 'checkOutResult';
+    },
+
+    async showPhotoPage() {
+        this.page = 'photo';
+        try {
+            if (navigator.mediaDevices.getUserMedia) {
+                this.videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                // CRUCIAL: Wait for DOM to update after page change to ensure $refs are available
+                await this.$nextTick(); 
+                const video = this.$refs.webcam; // Use $refs
+                if (video) {
+                    video.srcObject = this.videoStream;
+                    // Add event listener to play video once metadata is loaded
+                    video.onloadedmetadata = () => {
+                        video.play();
+                    };
+                } else {
+                    console.warn("showPhotoPage: Webcam video element not found via $refs.");
+                }
+            }
+        } catch (e) {
+            console.error('not able to get video', e);
+        }
+    },
+
+    stopCamera() {
+        if (this.videoStream) {
+            this.videoStream.getTracks().forEach(track => {
+                track.stop();
+            });
+        }
+    },
+
+    takePhotoCountdown() {
+        console.log("takePhotoCountdown: Button clicked!");
+        this.photo = null;
+        if (this.$refs.photoFlash) {
+            this.$refs.photoFlash.classList.remove('blink');
+        } else {
+            console.warn("takePhotoCountdown: photoFlash element not found via $refs.");
+        }
+        clearInterval(this.photoTimer);
+        this.photoTime = 3;
+        this.photoTimer = setInterval(() => {
+            this.photoTime -= 1;
+            if (this.photoTime < 1) {
+                clearInterval(this.photoTimer);
+                this.takePhoto();
+            }
+        }, 1000);
+    },
+
+    takePhoto() {
+        if (this.page !== 'photo') {
+            return;
+        }
+
+        if (this.$refs.shutterSound) {
+            this.$refs.shutterSound.play();
+        } else {
+            console.warn("takePhoto: shutterSound element not found via $refs.");
+        }
+
+        if (this.$refs.photoFlash) {
+            this.$refs.photoFlash.classList.add('blink');
+        } else {
+            console.warn("takePhoto: photoFlash element not found via $refs.");
+        }
+
+        const w = 600;
+        const h = 337;
+        const canvas = this.$refs.photoCanvas;
+        if (!canvas) {
+            console.error("takePhoto: Canvas element not found via $refs.");
+            return;
+        }
+        canvas.setAttribute('width', w);
+        canvas.setAttribute('height', h);
+
+        const video = this.$refs.webcam;
+        if (!video) {
+            console.error("takePhoto: Video element not found via $refs.");
+            return;
+        }
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, 600, 337);
+
+        const format = 'jpeg';
+        this.photo = canvas.toBlob(photo => {
+            this.photo = new File([photo], this.name + '.' + format, { type: "image/" + format, });
+        }, 'image/' + format);
+    },
+
+    updateTimeAndDate() {
+        const now = new Date();
+        this.date = now.format('mmmm d, yyyy');
+        this.time = now.format('HH:MM');
+    },
+
+    photoSrc() {
+        if (!this.photo) return;
+        const url = window.URL.createObjectURL(this.photo);
+        console.log('created', url);
+        return url;
+    }
+}));
+
+// Manually start Alpine.js AFTER the component has been registered
+// This ensures all components are registered before Alpine starts scanning the DOM
+Alpine.start();
+console.log("Alpine.start() called.");
