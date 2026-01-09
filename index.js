@@ -1,12 +1,10 @@
 // This file assumes 'webex.js' and 'date.format.js' are loaded BEFORE this script.
-// Also assumes 'alpine.js' is the original version, and 'window.Alpine = { defer: true }' is set in index.html.
+// Also assumes 'alpine.js' is the original version and auto-starts.
 
-// REMOVED: const hostMessage = `...`; from global scope
-
-// Define the Alpine data component
-// This version is compatible with window.Alpine = { defer: true } in index.html
-Alpine.data('dataModel', () => ({
-    // MOVED hostMessage INSIDE the dataModel component
+// Define dataModel as a global variable. Alpine's auto-start will find it.
+// This bypasses Alpine.data() and alpine:init for a direct global assignment.
+const dataModel = {
+    // MOVED hostMessage INSIDE the dataModel object as a property
     hostMessage: `Hello! A visitor has just arrived in the reception, and registered you as their host.
 
 Details:
@@ -99,7 +97,7 @@ Details:
 
     register() {
         this.page = 'registered';
-        // If hostMessage was used here, it would now be `this.hostMessage`
+        // Now hostMessage is accessed as `this.hostMessage`
     },
 
     getToken() {
@@ -134,6 +132,8 @@ Details:
             this.showConfirmation();
         } else if (page === 'confirm') {
             this.register();
+        } else if (page === 'checkOut') {
+            this.page = 'checkOutResult';
         } else {
             console.error('unknown next page');
         }
@@ -262,8 +262,7 @@ Details:
         console.log('created', url);
         return url;
     }
-}));
+};
 
-// Manually start Alpine.js AFTER the component has been registered
-Alpine.start();
-console.log("Alpine.start() called.");
+// No Alpine.data() wrapper, no alpine:init listener, no manual Alpine.start()
+// Alpine's auto-start will find the global `dataModel`
