@@ -9,7 +9,16 @@
     <!--<link rel="stylesheet" href="styles/theme-cisco.css" /> -->
     <!--<link rel="stylesheet" href="webex.css"> -->
     <link rel="stylesheet" href="styles/style.css" rel="stylesheet"/>
-    <!-- Load Alpine.js library first -->
+
+    <!-- CRITICAL ADDITION: Defer Alpine.js auto-initialization -->
+    <script>
+        // This must be a global variable accessible before Alpine.js loads
+        window.Alpine = {
+            defer: true
+        }
+    </script>
+
+    <!-- Load Alpine.js library -->
     <script defer src="alpine.js"></script>
     <!-- Load date formatting utility, as index.js depends on it -->
     <script defer src="date.format.js"></script>
