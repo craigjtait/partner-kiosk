@@ -13,7 +13,7 @@ Details:
 Alpine.data('dataModel', () => ({
     page: 'home',
     name: '',
-    email: '',
+    email: '', // This will now be used for validation
     date: 'October 6, 2022',
     time: '10:35 AM',
     roomId: '',
@@ -24,7 +24,7 @@ Alpine.data('dataModel', () => ({
     videoStream: null,
     phoneNumber: '',
     taxiNumber: '',
-    mapUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d37964.479957946394!2d-121.95893677399364!3d37.41713987799405!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x808fc911562d481f%3A0xd3d896b473be003!2sCisco%20Systems%20Building%2012!5e0!3m2!1sen!2sno!4v1674211511880!5m2!1sen!2sno',
+    mapUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d37964.479957946394!2d-121.95893677399405!3d37.41713987799405!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x808fc911562d481f%3A0xd3d896b473be003!2sCisco%20Systems%20Building%2012!5e0!3m2!1sen!2sno!4v1674211511880!5m2!1sen!2sno',
 
     init() {
         this.updateTimeAndDate();
@@ -44,9 +44,9 @@ Alpine.data('dataModel', () => ({
         if (!this.getToken() || !this.roomId) {
             this.configError = true;
             this.page = 'configError';
-            console.error("init: Configuration error - missing token or roomId."); // ADDED LOG
+            console.error("init: Configuration error - missing token or roomId.");
         } else {
-            console.log("init: Kiosk configured with roomId:", this.roomId); // ADDED LOG
+            console.log("init: Kiosk configured with roomId:", this.roomId);
         }
     },
 
@@ -108,18 +108,19 @@ Alpine.data('dataModel', () => ({
 
     next() {
         const { page } = this;
-        console.log('next: Current page:', page); // ADDED LOG
+        console.log('next: Current page:', page);
 
         if (page === 'home') {
             this.checkIn();
         } else if (page === 'checkIn') {
             const token = this.getToken();
             const roomId = this.getRoomId();
-            const visitorName = this.name.trim();
+            // CHANGED: Pass visitor's email instead of name
+            const visitorEmail = this.email.trim();
 
-            console.log('next (checkIn): Attempting to validate visitor in space.'); // ADDED LOG
-            validateVisitorInSpace(visitorName, token, roomId, (isAuthenticated) => {
-                console.log('next (checkIn) callback: isAuthenticated =', isAuthenticated); // ADDED LOG
+            console.log('next (checkIn): Attempting to validate visitor in space using email:', visitorEmail); // LOG UPDATED
+            validateVisitorInSpace(visitorEmail, token, roomId, (isAuthenticated) => { // FUNCTION CALL UPDATED
+                console.log('next (checkIn) callback: isAuthenticated =', isAuthenticated);
                 if (isAuthenticated) {
                     this.showPhotoPage();
                 } else {
