@@ -1,16 +1,18 @@
 // This file assumes 'webex.js' and 'date.format.js' are loaded BEFORE this script.
 // Also assumes 'alpine.js' has been set to defer auto-start via window.Alpine = { defer: true } in index.html.
 
-const hostMessage = `Hello! A visitor has just arrived in the reception, and registered you as their host.
+// REMOVED: const hostMessage = `...`; from global scope
+
+// Define the Alpine data component
+Alpine.data('dataModel', () => ({
+    // MOVED hostMessage INSIDE the dataModel component
+    hostMessage: `Hello! A visitor has just arrived in the reception, and registered you as their host.
 
 Details:
 
 * Name: **$name**
 * Email: **$email**
-`;
-
-// Define the Alpine data component
-Alpine.data('dataModel', () => ({
+`,
     page: 'home',
     name: '',
     email: '', // This will now be used for validation
@@ -96,6 +98,7 @@ Alpine.data('dataModel', () => ({
 
     register() {
         this.page = 'registered';
+        // If hostMessage was used here, it would now be `this.hostMessage`
     },
 
     getToken() {
@@ -164,12 +167,10 @@ Alpine.data('dataModel', () => ({
         try {
             if (navigator.mediaDevices.getUserMedia) {
                 this.videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
-                // CRUCIAL: Wait for DOM to update after page change to ensure $refs are available
                 await this.$nextTick(); 
-                const video = this.$refs.webcam; // Use $refs
+                const video = this.$refs.webcam; 
                 if (video) {
                     video.srcObject = this.videoStream;
-                    // Add event listener to play video once metadata is loaded
                     video.onloadedmetadata = () => {
                         video.play();
                     };
@@ -265,6 +266,5 @@ Alpine.data('dataModel', () => ({
 }));
 
 // Manually start Alpine.js AFTER the component has been registered
-// This ensures all components are registered before Alpine starts scanning the DOM
 Alpine.start();
 console.log("Alpine.start() called.");
