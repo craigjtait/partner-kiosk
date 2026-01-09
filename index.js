@@ -1,3 +1,9 @@
+// This is the CORRECTED content for your index.js file.
+// It matches the original index.js.txt from the first prompt,
+// but with the host functionality removed as per your request.
+
+// REMOVED: let currentSearchNumber = 0; from this file. It belongs ONLY in webex.js.
+
 const hostMessage = `Hello! A visitor has just arrived in the reception, and registered you as their host.
 
 Details:
@@ -7,18 +13,18 @@ Details:
 `;
 
 const dataModel = {
-// home > checkIn > findHost > confirmHost > photo > confim > registered | checkOut > checkOutResult
+// home > checkIn > photo > confim > registered | checkOut > checkOutResult
   page: 'home',
   name: '',
   email: '',
-  hostSearch: '',
-  currentHost: null,
+  // REMOVED: hostSearch: '',
+  // REMOVED: currentHost: null,
   date: 'October 6, 2022',
   time: '10:35 AM',
   roomId: '', // New: Webex Room ID for visitor authentication
   configError: false, // New: Flag for missing configuration
-  foundHosts: [],
-  searchStatus: '',
+  // REMOVED: foundHosts: [],
+  // REMOVED: searchStatus: '',
   photo: null,
   photoTimer: 0,
   photoTime: 0,
@@ -47,11 +53,6 @@ const dataModel = {
       this.configError = true;
       this.page = 'configError'; // Set page to config error state
     }
-    // Removed quick jump to photo page for dev:
-    // this.showPhotoPage();
-    // this.name = 'Tore Bjolseth';
-    // this.email = 'tbjolset@cisco.com';
-    // this.currentHost = { displayName: 'Anna Gjerlaug' };
   },
 
   home() {
@@ -63,9 +64,9 @@ const dataModel = {
   reset() {
     this.name = '';
     this.email = '';
-    this.currentHost = null;
-    this.foundHosts = [];
-    this.searchStatus = '';
+    // REMOVED: this.currentHost = null;
+    // REMOVED: this.foundHosts = [];
+    // REMOVED: this.searchStatus = '';
     this.photo = null;
     this.phoneNumber = '';
     clearInterval(this.photoTimer);
@@ -85,7 +86,7 @@ const dataModel = {
     else if (this.page === 'checkOut') {
       return this.email.match(emailPattern);
     }
-    /*else if (this.page === 'taxi') {
+    /*else if (page === 'taxi') {
       return this.phoneNumber.length > 3;
     }*/
     return true;
@@ -107,41 +108,19 @@ const dataModel = {
 
   },
 
-  findHost() {
-    this.page = 'findHost';
-    this.searchStatus = ''; // New: Clear any previous status from visitor authentication
-    this.focus('#host');
-  },
-
   register() {
     this.page = 'registered';
+    // The hostMessage logic is still here, but currentHost is removed.
+    // We can remove this entire block if no message is ever sent.
     const msg = hostMessage
       .replace('$name', this.name.trim())
       .replace('$email', this.email.trim());
-    if (!this.currentHost) {
-      return;
-    }
-
-    const email = this.currentHost.emails[0];
-    const token = this.getToken();
-
-    if (!token) {
-      return;
-    }
-    sendMessage(token, email, msg, this.photo)
-      .catch(e => {
-        console.warn(e);
-        alert('We were not able to send a message to the host at this time.');
-      });
+    // if (!this.currentHost) { // This will now always be true since currentHost is removed
+    //   // If no host, we might want to send a generic message or just log
+    //   console.log("No specific host selected, but visitor registered.");
+    //   // return; // Uncomment this if you want to prevent message sending without a host
+    // }
    },
-
-  selectHost(host) {
-    this.currentHost = host;
-    this.hostSearch = '';
-    this.searchStatus = '';
-    this.foundHosts = [];
-    this.next();
-  },
 
   getToken() {
     // TODO perhaps use localStorage intead?
@@ -153,7 +132,7 @@ const dataModel = {
   },
 
   next() {
-    // home > checkIn > findHost > photo > confim > registered
+    // home > checkIn > photo > confim > registered
     const { page } = this;
 
     if (page === 'home') {
@@ -163,25 +142,15 @@ const dataModel = {
       // New: Authenticate visitor against the Webex space before proceeding
       const token = this.getToken();
       const roomId = this.getRoomId();
-      const visitorName = this.name.trim();
+      const visitorName = this.name.trim(); // Still using name for now, will change to email in a later step
 
-      // Display a status while authenticating
-      this.searchStatus = 'Authenticating visitor...';
       validateVisitorInSpace(visitorName, token, roomId, (isAuthenticated) => {
-        this.searchStatus = ''; // Clear status after authentication attempt
         if (isAuthenticated) {
-          this.findHost(); // Visitor found in space, proceed to find host
+          this.showPhotoPage(); // Visitor found in space, proceed to photo page (SKIPPING findHost)
         } else {
           this.page = 'notRegistered'; // Visitor not found, show error page
         }
       });
-      // The rest of the next() logic is handled in the callback
-    }
-    else if (page === 'findHost') {
-      this.confirmHost();
-    }
-    else if (page === 'confirmHost') {
-      this.showPhotoPage();
     }
     else if (page === 'photo') {
       this.showConfirmation();
@@ -203,19 +172,13 @@ const dataModel = {
   },
 
   back() {
-    // home > checkIn > findHost > photo > confim > registered | checkOut
+    // home > checkIn > photo > confim > registered | checkOut
     const { page } = this;
     if (page === 'checkIn') {
       this.home();
     }
-    else if (page === 'findHost') {
-      this.checkIn();
-    }
-    else if (page === 'confirmHost') {
-      this.findHost();
-    }
     else if (page === 'photo') {
-      this.confirmHost();
+      this.checkIn(); // Back from photo goes to checkIn
     }
     else if (page === 'confirm') {
       this.showPhotoPage();
@@ -298,36 +261,6 @@ const dataModel = {
 
     // to compress for jpeg for webex cards, look at:
     // https://github.com/jpeg-js/jpeg-js/blob/master/lib/encoder.js
-  },
-
-  searchHost() {
-    const word = this.hostSearch.trim();
-
-    const token = this.getToken();
-    // Note: roomId is not passed here, as searchHostByName uses the People API for host search.
-
-    if (word.length > 2) {
-      this.searchStatus = 'Searching...';
-      searchHostByName(word, token, list => { // New: Call the dedicated host search function
-        this.foundHosts = list;
-        this.searchStatus= 'Found: ' + list.length;
-      });
-    }
-    else {
-      this.foundHosts = [];
-      this.searchStatus = '';
-    }
-  },
-
-  confirmHost() {
-    this.page = 'confirmHost';
-  },
-
-  getAvatar(person) {
-    const { avatar } = person || {};
-    return avatar
-      ? { backgroundImage: `url(${avatar.replace('~1600', '~110')})` }
-      : null;
   },
 
   checkOut() {
