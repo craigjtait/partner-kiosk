@@ -1,173 +1,270 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Event Check-in Kiosk</title>
-    <!-- Add your CSS links here if you have any, e.g., <link rel="stylesheet" href="styles.css"> -->
-    <!-- If you have a theme-cisco.css, it should be linked here as well -->
-    <!-- <link rel="stylesheet" href="styles/theme-cisco.css" /> -->
+// This file assumes 'webex.js' and 'date.format.js' are loaded BEFORE this script.
+// Also assumes 'alpine.js' has been set to defer auto-start via window.Alpine = { defer: true } in index.html.
 
-    <!-- Defer Alpine.js auto-initialization -->
-    <script>
-        // This must be a global variable accessible before Alpine.js loads
-        window.Alpine = {
-            defer: true
+const hostMessage = `Hello! A visitor has just arrived in the reception, and registered you as their host.
+
+Details:
+
+* Name: **$name**
+* Email: **$email**
+`;
+
+// Define the Alpine data component
+Alpine.data('dataModel', () => ({
+    page: 'home',
+    name: '',
+    email: '', // This will now be used for validation
+    date: 'October 6, 2022',
+    time: '10:35 AM',
+    roomId: '',
+    configError: false,
+    photo: null,
+    photoTimer: 0,
+    photoTime: 0,
+    videoStream: null,
+    phoneNumber: '',
+    taxiNumber: '',
+    mapUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d37964.479957946394!2d-121.95893677399405!3d37.41713987799405!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x808fc911562d481f%3A0xd3d896b473be003!2sCisco%20Systems%20Building%2012!5e0!3m2!1sen!2sno!4v1674211511880!5m2!1sen!2sno',
+
+    init() {
+        this.updateTimeAndDate();
+        setInterval(() => this.updateTimeAndDate(), 30 * 1000);
+        const params = new URLSearchParams(location.search);
+        this.roomId = params.get('roomId');
+        this.mapUrl = params.get('map') || this.mapUrl;
+        this.theme = params.get('theme');
+
+        if (this.theme) {
+            const head = document.getElementsByTagName("head")[0];
+            head.insertAdjacentHTML(
+                "beforeend",
+                `<link rel="stylesheet" href="styles/theme-cisco.css" />`);
         }
-    </script>
 
-    <!-- Load Alpine.js library -->
-    <script defer src="alpine.js"></script>
-    <!-- Load date formatting utility, as index.js depends on it -->
-    <script defer src="date.format.js"></script>
-    <!-- Load Webex API functions, as index.js depends on them -->
-    <script defer src="webex.js"></script>
-    <!-- Load your application logic (dataModel) last -->
-    <script defer src="index.js"></script>
-</head>
-<body>
-    <!-- The main Alpine.js component container should be a <div> -->
-    <div x-data="dataModel" x-init="console.log('dataModel x-init called. Current page:', page); init()">
-        <!-- All conditional pages should be wrapped in <template x-if="..."> -->
-        <template x-if="page === 'home'">
-            <div class="page home">
-                <div class="content">
-                    <div class="welcome-text">
-                        Welcome
-                    </div>
-                    <div class="intro-text">
-                        Please select an action below.
-                    </div>
-                    <div class="action-buttons">
-                        <button @click="checkIn()">Check In</button>
-                        <button @click="checkOut()">Check Out</button>
-                    </div>
-                </div>
-            </div>
-        </template>
+        if (!this.getToken() || !this.roomId) {
+            this.configError = true;
+            this.page = 'configError';
+            console.error("init: Configuration error - missing token or roomId.");
+        } else {
+            console.log("init: Kiosk configured with roomId:", this.roomId);
+        }
+    },
 
-        <template x-if="page === 'checkIn'">
-            <div class="page check-in">
-                <div class="content">
-                    <h2>Check In</h2>
-                    <p>Please enter your details to check in for the event.</p>
-                    <input type="text" x-model="name" placeholder="Your Name" id="name">
-                    <input type="email" x-model="email" placeholder="Your Email" id="email">
-                    <div class="action-buttons">
-                        <button @click="back()">Back</button>
-                        <button @click="next()" :disabled="!validForm">Next</button>
-                    </div>
-                </div>
-            </div>
-        </template>
+    home() {
+        this.page = 'home';
+        this.reset();
+        this.configError = false;
+    },
 
-        <template x-if="page === 'photo'">
-            <div class="page photo-capture">
-                <div class="content">
-                    <h2>Take a Photo</h2>
-                    <p>Please look at the camera and take a photo for your badge.</p>
-                    <div class="webcam-container">
-                        <video x-ref="webcam" class="webcam" autoplay="" playsinline=""></video>
-                        <canvas x-ref="photoCanvas" class="photo"></canvas>
-                        <div x-ref="photoFlash" class="photo-flash"></div>
-                    </div>
-                    <div class="countdown" x-show="photoTime &gt; 0" x-text="photoTime"></div>
-                    <audio x-ref="shutterSound" id="shutter-sound" src="shutter.mp3"></audio>
-                    <div class="action-buttons">
-                        <button @click="back()">Back</button>
-                        <button @click="takePhotoCountdown()" x-show="!photo">Take Photo</button>
-                        <button @click="next()" x-show="photo">Confirm Photo</button>
-                    </div>
-                </div>
-            </div>
-        </template>
+    reset() {
+        this.name = '';
+        this.email = '';
+        this.photo = null;
+        this.phoneNumber = '';
+        clearInterval(this.photoTimer);
+    },
 
-        <template x-if="page === 'confirm'">
-            <div class="page confirm-details">
-                <div class="content">
-                    <h2>Confirm Your Details</h2>
-                    <div class="details-summary">
-                        <img :src="photoSrc()" alt="Your Photo" x-show="photo">
-                        <p><strong>Name:</strong> <span x-text="name"></span></p>
-                        <p><strong>Email:</strong> <span x-text="email"></span></p>
-                    </div>
-                    <div class="action-buttons">
-                        <button @click="back()">Back</button>
-                        <button @click="next()">Confirm Check-in</button>
-                    </div>
-                </div>
-            </div>
-        </template>
+    call() {
+        const defaultNumber = 'erica.talking@ivr.vc';
+        const number = new URLSearchParams(location.search).get('reception') || defaultNumber;
+        location.href = `sip:${number}`;
+    },
 
-        <template x-if="page === 'registered'">
-            <div class="page registered">
-                <div class="content">
-                    <h2>You are Checked In!</h2>
-                    <p>Thank you for checking in for the event.</p>
-                    <p>Enjoy your time!</p>
-                    <div class="action-buttons">
-                        <button @click="home()">Done</button>
-                    </div>
-                </div>
-            </div>
-        </template>
+    get validForm() {
+        const emailPattern = /\w+@\w+/;
+        if (this.page === 'checkIn') {
+            return this.name.trim().length && this.email.match(emailPattern);
+        } else if (this.page === 'checkOut') {
+            return this.email.match(emailPattern);
+        }
+        return true;
+    },
 
-        <template x-if="page === 'notRegistered'">
-            <div class="page error">
-                <div class="content">
-                    <h2>Registration Error</h2>
-                    <p>We could not find your registration for this event.</p>
-                    <p>Please check your details or contact event staff for assistance.</p>
-                    <div class="action-buttons">
-                        <button @click="home()">Back to Home</button>
-                    </div>
-                </div>
-            </div>
-        </template>
+    checkIn() {
+        this.page = 'checkIn';
+        this.focus('#name');
+    },
 
-        <template x-if="page === 'checkOut'">
-            <div class="page check-out">
-                <div class="content">
-                    <h2>Check Out</h2>
-                    <p>Please enter your email to check out.</p>
-                    <input type="email" x-model="email" placeholder="Your Email" id="checkout-email">
-                    <div class="action-buttons">
-                        <button @click="home()">Cancel</button>
-                        <button @click="next()" :disabled="!validForm">Check Out</button>
-                    </div>
-                </div>
-            </div>
-        </template>
+    focus(id) {
+        setTimeout(() => {
+            const firstInput = document.querySelector(id);
+            if (firstInput) {
+                firstInput.focus();
+            }
+        }, 100);
+    },
 
-        <template x-if="page === 'checkOutResult'">
-            <div class="page check-out-result">
-                <div class="content">
-                    <h2>Thank You!</h2>
-                    <p>You have successfully checked out.</p>
-                    <div class="action-buttons">
-                        <button @click="home()">Done</button>
-                    </div>
-                </div>
-            </div>
-        </template>
+    register() {
+        this.page = 'registered';
+    },
 
-        <template x-if="page === 'configError'">
-            <div class="page error">
-                <div class="content">
-                    <h2>Configuration Error</h2>
-                    <p>The kiosk is not properly configured. Missing Webex token or Room ID.</p>
-                    <p>Please contact support.</p>
-                    <div class="action-buttons">
-                        <button @click="home()">Reload</button>
-                    </div>
-                </div>
-            </div>
-        </template>
+    getToken() {
+        return new URLSearchParams(location.search).get('token');
+    },
 
-        <div class="footer">
-            <div class="date" x-text="date"></div>
-            <div class="time" x-text="time"></div>
-        </div>
-    </div>
-</body>
-</html>
+    getRoomId() {
+        return new URLSearchParams(location.search).get('roomId');
+    },
+
+    next() {
+        const { page } = this;
+        console.log('next: Current page:', page);
+
+        if (page === 'home') {
+            this.checkIn();
+        } else if (page === 'checkIn') {
+            const token = this.getToken();
+            const roomId = this.getRoomId();
+            const visitorEmail = this.email.trim();
+
+            console.log('next (checkIn): Attempting to validate visitor in space using email:', visitorEmail);
+            validateVisitorInSpace(visitorEmail, token, roomId, (isAuthenticated) => {
+                console.log('next (checkIn) callback: isAuthenticated =', isAuthenticated);
+                if (isAuthenticated) {
+                    this.showPhotoPage();
+                } else {
+                    this.page = 'notRegistered';
+                }
+            });
+        } else if (page === 'photo') {
+            this.showConfirmation();
+        } else if (page === 'confirm') {
+            this.register();
+        } else if (page === 'checkOut') {
+            this.page = 'checkOutResult';
+        } else {
+            console.error('unknown next page');
+        }
+    },
+
+    back() {
+        const { page } = this;
+        if (page === 'checkIn') {
+            this.home();
+        } else if (page === 'photo') {
+            this.checkIn();
+        } else if (page === 'confirm') {
+            this.showPhotoPage();
+        } else {
+            console.error('unknown previous page');
+        }
+    },
+
+    showConfirmation() {
+        this.stopCamera();
+        this.page = 'confirm';
+    },
+
+    checkout() {
+        this.page = 'checkOutResult';
+    },
+
+    async showPhotoPage() {
+        this.page = 'photo';
+        try {
+            if (navigator.mediaDevices.getUserMedia) {
+                this.videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                // CRUCIAL: Wait for DOM to update after page change to ensure $refs are available
+                await this.$nextTick(); 
+                const video = this.$refs.webcam; // Use $refs
+                if (video) {
+                    video.srcObject = this.videoStream;
+                    // Add event listener to play video once metadata is loaded
+                    video.onloadedmetadata = () => {
+                        video.play();
+                    };
+                } else {
+                    console.warn("showPhotoPage: Webcam video element not found via $refs.");
+                }
+            }
+        } catch (e) {
+            console.error('not able to get video', e);
+        }
+    },
+
+    stopCamera() {
+        if (this.videoStream) {
+            this.videoStream.getTracks().forEach(track => {
+                track.stop();
+            });
+        }
+    },
+
+    takePhotoCountdown() {
+        console.log("takePhotoCountdown: Button clicked!");
+        this.photo = null;
+        if (this.$refs.photoFlash) {
+            this.$refs.photoFlash.classList.remove('blink');
+        } else {
+            console.warn("takePhotoCountdown: photoFlash element not found via $refs.");
+        }
+        clearInterval(this.photoTimer);
+        this.photoTime = 3;
+        this.photoTimer = setInterval(() => {
+            this.photoTime -= 1;
+            if (this.photoTime < 1) {
+                clearInterval(this.photoTimer);
+                this.takePhoto();
+            }
+        }, 1000);
+    },
+
+    takePhoto() {
+        if (this.page !== 'photo') {
+            return;
+        }
+
+        if (this.$refs.shutterSound) {
+            this.$refs.shutterSound.play();
+        } else {
+            console.warn("takePhoto: shutterSound element not found via $refs.");
+        }
+
+        if (this.$refs.photoFlash) {
+            this.$refs.photoFlash.classList.add('blink');
+        } else {
+            console.warn("takePhoto: photoFlash element not found via $refs.");
+        }
+
+        const w = 600;
+        const h = 337;
+        const canvas = this.$refs.photoCanvas;
+        if (!canvas) {
+            console.error("takePhoto: Canvas element not found via $refs.");
+            return;
+        }
+        canvas.setAttribute('width', w);
+        canvas.setAttribute('height', h);
+
+        const video = this.$refs.webcam;
+        if (!video) {
+            console.error("takePhoto: Video element not found via $refs.");
+            return;
+        }
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, 600, 337);
+
+        const format = 'jpeg';
+        this.photo = canvas.toBlob(photo => {
+            this.photo = new File([photo], this.name + '.' + format, { type: "image/" + format, });
+        }, 'image/' + format);
+    },
+
+    updateTimeAndDate() {
+        const now = new Date();
+        this.date = now.format('mmmm d, yyyy');
+        this.time = now.format('HH:MM');
+    },
+
+    photoSrc() {
+        if (!this.photo) return;
+        const url = window.URL.createObjectURL(this.photo);
+        console.log('created', url);
+        return url;
+    }
+}));
+
+// Manually start Alpine.js AFTER the component has been registered
+// This ensures all components are registered before Alpine starts scanning the DOM
+Alpine.start();
+console.log("Alpine.start() called.");
