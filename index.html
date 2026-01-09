@@ -10,17 +10,14 @@
     <!-- Include your general stylesheet -->
     <link rel="stylesheet" href="styles/style.css" />
 
-    <!-- Load Alpine.js library first (defer is fine here) -->
+    <!-- Load Alpine.js library first -->
     <script defer src="alpine.js"></script>
-    
-    <!-- Load date formatting utility (MUST execute before index.js) -->
-    <script src="date.format.js"></script> <!-- CRITICAL CHANGE: REMOVED 'defer' attribute -->
-    
-    <!-- Load Webex API functions (MUST execute before index.js) -->
-    <script src="webex.js"></script> <!-- CRITICAL CHANGE: REMOVED 'defer' attribute -->
-    
+    <!-- Load date formatting utility, as index.js depends on it -->
+    <script src="date.format.js"></script> <!-- NO DEFER -->
+    <!-- Load Webex API functions, as index.js depends on them -->
+    <script src="webex.js"></script> <!-- NO DEFER -->
     <!-- Load your application logic (dataModel) last -->
-    <script src="index.js"></script> <!-- This was already without 'defer' -->
+    <script src="index.js"></script> <!-- NO DEFER -->
 </head>
 <body>
     <!-- The main Alpine.js component container should be a <div> -->
@@ -66,12 +63,12 @@
                     <h2>Take a Photo</h2>
                     <p>Please look at the camera and take a photo for your badge.</p>
                     <div class="webcam-container">
-                        <video class="webcam" autoplay="" playsinline=""></video>
-                        <canvas class="photo"></canvas>
-                        <div class="photo-flash"></div>
+                        <video x-ref="webcam" class="webcam" autoplay="" playsinline=""></video> <!-- ADDED x-ref -->
+                        <canvas x-ref="photoCanvas" class="photo"></canvas> <!-- ADDED x-ref -->
+                        <div x-ref="photoFlash" class="photo-flash"></div> <!-- ADDED x-ref -->
                     </div>
                     <div class="countdown" x-show="photoTime &gt; 0" x-text="photoTime"></div>
-                    <audio id="shutter-sound" src="assets/shutter.mp3"></audio>
+                    <audio x-ref="shutterSound" id="shutter-sound" src="assets/shutter.mp3"></audio> <!-- ADDED x-ref, UPDATED src -->
                     <div class="action-buttons">
                         <button @click="back()">Back</button>
                         <button @click="takePhotoCountdown()" x-show="!photo">Take Photo</button>

@@ -52,6 +52,9 @@ const dataModel = {
     if (!this.getToken() || !this.roomId) {
       this.configError = true;
       this.page = 'configError'; // Set page to config error state
+      console.error("init: Configuration error - missing token or roomId."); // ADDED LOG
+    } else {
+      console.log("init: Kiosk configured with roomId:", this.roomId); // ADDED LOG
     }
   },
 
@@ -134,6 +137,7 @@ const dataModel = {
   next() {
     // home > checkIn > photo > confim > registered
     const { page } = this;
+    console.log('next: Current page:', page); // ADDED LOG
 
     if (page === 'home') {
       this.checkIn();
@@ -142,9 +146,12 @@ const dataModel = {
       // New: Authenticate visitor against the Webex space before proceeding
       const token = this.getToken();
       const roomId = this.getRoomId();
-      const visitorName = this.name.trim(); // Still using name for now, will change to email in a later step
+      // CHANGED: Pass visitor's email instead of name
+      const visitorEmail = this.email.trim();
 
-      validateVisitorInSpace(visitorName, token, roomId, (isAuthenticated) => {
+      console.log('next (checkIn): Attempting to validate visitor in space using email:', visitorEmail); // ADDED LOG
+      validateVisitorInSpace(visitorEmail, token, roomId, (isAuthenticated) => { // FUNCTION CALL UPDATED
+        console.log('next (checkIn) callback: isAuthenticated =', isAuthenticated); // ADDED LOG
         if (isAuthenticated) {
           this.showPhotoPage(); // Visitor found in space, proceed to photo page (SKIPPING findHost)
         } else {
@@ -203,8 +210,18 @@ const dataModel = {
     try {
       if (navigator.mediaDevices.getUserMedia) {
         this.videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
-        const video = document.querySelector('.webcam');
-        video.srcObject = this.videoStream;
+        // CRITICAL: Wait for DOM to update after page change to ensure $refs are available
+        await this.$nextTick(); 
+        const video = this.$refs.webcam; // Use $refs
+        if (video) {
+            video.srcObject = this.videoStream;
+            // Add event listener to play video once metadata is loaded
+            video.onloadedmetadata = () => {
+                video.play();
+            };
+        } else {
+            console.warn("showPhotoPage: Webcam video element not found via $refs.");
+        }
       }
     }
     catch(e) {
@@ -221,8 +238,14 @@ const dataModel = {
   },
 
   takePhotoCountdown() {
+    console.log("takePhotoCountdown: Button clicked!"); // ADDED LOG
     this.photo = null;
-    document.querySelector('.photo-flash').classList.remove('blink');
+    // Use $refs for photoFlash
+    if (this.$refs.photoFlash) {
+        this.$refs.photoFlash.classList.remove('blink');
+    } else {
+        console.warn("takePhotoCountdown: photoFlash element not found via $refs.");
+    }
     clearInterval(this.photoTimer);
     this.photoTime = 3;
     this.photoTimer = setInterval(() => {
@@ -240,16 +263,37 @@ const dataModel = {
       return;
     }
 
-    document.querySelector('#shutter-sound').play();
-    document.querySelector('.photo-flash').classList.add('blink');
+    // Use $refs for shutterSound
+    if (this.$refs.shutterSound) {
+        this.$refs.shutterSound.play();
+    } else {
+        console.warn("takePhoto: shutterSound element not found via $refs.");
+    }
+
+    // Use $refs for photoFlash
+    if (this.$refs.photoFlash) {
+        this.$refs.photoFlash.classList.add('blink');
+    } else {
+        console.warn("takePhoto: photoFlash element not found via $refs.");
+    }
 
     const w = 600;
     const h = 337;
-    const canvas = document.querySelector('.photo');
+    // Use $refs for photoCanvas
+    const canvas = this.$refs.photoCanvas;
+    if (!canvas) {
+        console.error("takePhoto: Canvas element not found via $refs.");
+        return;
+    }
     canvas.setAttribute('width', w);
     canvas.setAttribute('height', h);
 
-    const video = document.querySelector('.webcam');
+    // Use $refs for webcam
+    const video = this.$refs.webcam;
+    if (!video) {
+        console.error("takePhoto: Video element not found via $refs.");
+        return;
+    }
     const ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0, 600, 337);
     // this.photo = canvas.toDataURL('image/jpeg');
